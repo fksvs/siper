@@ -10,7 +10,7 @@
 
 char _license[] SEC("license") = "GPL";
 
-// Structure to hold IP address and prefix in CIDR form
+// structure to hold IP address and prefix in CIDR form
 struct ipv4_lpm_key {
 	__u32 prefixlen;
 	__u32 data;
@@ -25,18 +25,21 @@ struct {
 	__uint(max_entries, 65535);
 } ipv4_lpm_map SEC(".maps");
 
-// indexes for metric map
-#define PASS_PKTS_INDEX 0
-#define DROP_PKTS_INDEX 1
-#define PASS_BYTES_INDEX 2
-#define DROP_BYTES_INDEX 3
+// structure to count packets and total bytes
+struct datarec {
+	__u64 packets;
+	__u64 bytes;
+};
 
-// eBPF map to hold metrics
+#define METRICS_PASS 0
+#define METRICS_DROP 1
+
+// eBPF maps to hold metrics
 struct {
 	__uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
 	__type(key, __u32);
-	__type(value, __u64);
-	__uint(max_entries, 4);
+	__type(value, struct datarec);
+	__uint(max_entries, 2);
 } metrics_map SEC(".maps");
 
 struct hdr_cursor {
@@ -46,7 +49,6 @@ struct hdr_cursor {
 static __always_inline int parse_ethhdr(struct hdr_cursor *nh, void *data_end, struct ethhdr **eth_hdr)
 {
 	struct ethhdr *eth = nh->pos;
-	int hdr_size = sizeof(*eth);
 
 	if ((void *)(eth + 1) > data_end) {
 		return -1;
@@ -62,7 +64,6 @@ static __always_inline int parse_ethhdr(struct hdr_cursor *nh, void *data_end, s
 static __always_inline int parse_ipv4(struct hdr_cursor *nh, void *data_end, struct iphdr **ip_hdr)
 {
 	struct iphdr *iph = nh->pos;
-	int hdr_size = sizeof(*iph);
 
 	if ((void *)(iph + 1) > data_end) {
 		return -1;
@@ -81,15 +82,16 @@ static __always_inline int parse_ipv4(struct hdr_cursor *nh, void *data_end, str
 	return iph->protocol;
 }
 
-static __always_inline void metric_inc(__u32 key, __u64 bytes) {
-	__u64 data= bpf_map_lookup_elem(&metrics_map, &key);
+static __always_inline void metrics_inc(__u32 key, __u64 bytes) {
+        struct datarec *rec = bpf_map_lookup_elem(&metrics_map, &key);
 
-	if (data) {
-		*data += bytes;
-	}
+        if (rec) {
+		rec->packets++;
+		rec->bytes += bytes;
+        }
 }
 
-static __always_inline void *map_lookup(__u32 ipaddr)
+static __always_inline __u32 *map_lookup(__u32 ipaddr)
 {
 	struct ipv4_lpm_key key = {
 		.prefixlen = 32,
@@ -113,32 +115,27 @@ int xdp_siper_firewall(struct xdp_md *ctx)
 
 	int eth_proto_be = parse_ethhdr(&nh, data_end, &eth);
 	if (eth_proto_be < 0) {
-		metric_inc(PASS_PKTS_INDEX, 1);
-		metric_inc(PASS_BYTES_INDEX, pkt_len);
+		metrics_inc(METRICS_PASS, pkt_len);
 		return XDP_PASS;
 	}
 
 	__u16 eth_proto = bpf_ntohs((__be16)eth_proto_be);
 	if (eth_proto != ETH_P_IP) {
-		metric_inc(PASS_PKTS_INDEX, 1);
-		metric_inc(PASS_BYTES_INDEX, pkt_len);
+		metrics_inc(METRICS_PASS, pkt_len);
 		return XDP_PASS;
 	}
 
 	if (parse_ipv4(&nh, data_end, &iph) < 0) {
-		metric_inc(PASS_PKTS_INDEX, 1);
-		metric_inc(PASS_BYTES_INDEX, pkt_len);
+		metrics_inc(METRICS_PASS, pkt_len);
 		return XDP_PASS;
 	}
 
 	__u32 saddr = iph->saddr;
 	if (map_lookup(saddr)) {
-		metric_inc(DROP_PKTS_INDEX, 1);
-		metric_inc(DROP_BYTES_INDEX, pkt_len);
+		metrics_inc(METRICS_DROP, pkt_len);
 		return XDP_DROP;
 	}
 
-	metric_inc(PASS_PKTS_INDEX, 1);
-	metric_inc(PASS_BYTES_INDEX, pkt_len);
+	metrics_inc(METRICS_PASS, pkt_len);
 	return XDP_PASS;
 }
