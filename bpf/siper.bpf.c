@@ -46,7 +46,8 @@ struct hdr_cursor {
 	void *pos;
 };
 
-static __always_inline int parse_ethhdr(struct hdr_cursor *nh, void *data_end, struct ethhdr **eth_hdr)
+static __always_inline int parse_ethhdr(struct hdr_cursor *nh, void *data_end,
+					struct ethhdr **eth_hdr)
 {
 	struct ethhdr *eth = nh->pos;
 
@@ -61,7 +62,8 @@ static __always_inline int parse_ethhdr(struct hdr_cursor *nh, void *data_end, s
 	return eth->h_proto;
 }
 
-static __always_inline int parse_ipv4(struct hdr_cursor *nh, void *data_end, struct iphdr **ip_hdr)
+static __always_inline int parse_ipv4(struct hdr_cursor *nh, void *data_end,
+				      struct iphdr **ip_hdr)
 {
 	struct iphdr *iph = nh->pos;
 
@@ -82,13 +84,14 @@ static __always_inline int parse_ipv4(struct hdr_cursor *nh, void *data_end, str
 	return iph->protocol;
 }
 
-static __always_inline void metrics_inc(__u32 key, __u64 bytes) {
-        struct datarec *rec = bpf_map_lookup_elem(&metrics_map, &key);
+static __always_inline void metrics_inc(__u32 key, __u64 bytes)
+{
+	struct datarec *rec = bpf_map_lookup_elem(&metrics_map, &key);
 
-        if (rec) {
+	if (rec) {
 		rec->packets++;
 		rec->bytes += bytes;
-        }
+	}
 }
 
 static __always_inline __u32 *map_lookup(__u32 ipaddr)

@@ -1,10 +1,11 @@
 package bpf
 
 import (
-	"strings"
-	"net"
+	"encoding/binary"
 	"fmt"
-	"binary"
+	"net"
+	"strings"
+
 	"github.com/cilium/ebpf"
 )
 
@@ -26,7 +27,7 @@ func CreateKey(cidr string) (*IPv4LpmKey, error) {
 	}
 
 	ones, bits := ipnet.Mask.Size()
-	if bits != 32 {   
+	if bits != 32 {
 		return nil, fmt.Errorf("unexpected mask bits: %d", bits)
 	}
 
@@ -39,29 +40,19 @@ func CreateKey(cidr string) (*IPv4LpmKey, error) {
 	return &key, nil
 }
 
-func (objs *SiperObjs) AddIPv4Addr(cidr string) (*IPv4LpmKey, error) {
-	key, err := CreateKey(cidr)
-	if err != nil {
-		return nil, err
-	}
-
+func (objs *SiperObjs) AddCidr(key *IPv4LpmKey) error {
 	var value uint32 = 1
 
-	err = objs.IPv4LpmKey.Update(key, value, ebpf.UpdateAny)
-	if err != nil {
-		return nil, err
-	}
-
-	return key, nil
-}
-
-func (objs *SiperObjs) DelIPv4Addr(cidr string) error {
-	key, err := CreateKey(cidr)
+	err := objs.IPv4LpmMap.Update(key, value, ebpf.UpdateAny)
 	if err != nil {
 		return err
 	}
 
-	err = objs.IPv4LpmKey.Delete(key)
+	return nil
+}
+
+func (objs *SiperObjs) DelCidr(key *IPv4LpmKey) error {
+	err := objs.IPv4LpmMap.Delete(key)
 	if err != nil {
 		return err
 	}
