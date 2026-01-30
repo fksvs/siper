@@ -2,7 +2,6 @@ package bpf
 
 import (
 	"github.com/cilium/ebpf"
-	"github.com/cilium/ebpf/link"
 )
 
 const (
@@ -11,6 +10,7 @@ const (
 	ProgramPinPath    = "/sys/fs/bpf/siperprogram"
 )
 
+// check bpf/siper.bpf.c
 const (
 	METRICS_PASS = 0
 	METRICS_DROP = 1
@@ -30,5 +30,4 @@ type SiperObjs struct {
 	IPv4LpmMap       *ebpf.Map     `ebpf:"ipv4_lpm_map"`
 	MetricsMap       *ebpf.Map     `ebpf:"metrics_map"`
 	XDPSiperFirewall *ebpf.Program `ebpf:"xdp_siper_firewall"`
-	Link             link.Link
 }
