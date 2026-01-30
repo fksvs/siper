@@ -27,8 +27,56 @@ type KeyOptions struct {
 }
 
 func usage() {
-	// TODO
-	fmt.Printf("Usage here\n")
+	fmt.Println(`siper — XDP-based IP blacklist firewall
+
+USAGE:
+  siper <command> [options]
+
+COMMANDS:
+  run            Load and attach the XDP firewall, then apply blacklist
+  stop           Detach the XDP firewall and clean pinned resources
+  add            Add a CIDR rule to the blacklist file
+  del            Delete a CIDR rule from the blacklist file
+  dump-keys      Dump currently loaded blacklist keys from the kernel
+  dump-metrics   Dump firewall packet/byte counters
+  help           Show this help message
+
+RUN COMMAND:
+  siper run --iface <iface> [--path <blacklist.json>] [--object <siper.o>] [--dry-run]
+
+  --iface        Network interface to attach XDP program (required)
+  --path         Path to blacklist JSON file (default: ./blacklist.json)
+  --object       Path to compiled XDP object file (default: ./siper.o)
+  --dry-run      Validate blacklist and object without attaching
+
+STOP COMMAND:
+  siper stop --iface <iface>
+
+  --iface        Network interface to detach XDP program from (required)
+
+ADD COMMAND:
+  siper add --cidr <CIDR> [--path <blacklist.json>] [--comment <text>] [--source <name>]
+
+  --cidr         CIDR to block (required)
+  --path         Path to blacklist JSON file (default: ./blacklist.json)
+  --comment      Optional comment for the rule
+  --source       Rule source identifier (default: empty)
+
+DEL COMMAND:
+  siper del --cidr <CIDR> [--path <blacklist.json>]
+  siper del --id <RULE_ID> [--path <blacklist.json>]
+
+DUMP COMMANDS:
+  siper dump-keys
+      Show CIDR rules currently loaded into the kernel LPM map
+
+  siper dump-metrics
+      Show packet and byte counters for pass/drop decisions
+
+NOTES:
+  - 'add' and 'del' only modify the blacklist file; they do NOT touch the kernel.
+  - 'run' must be executed as root or with CAP_NET_ADMIN + CAP_BPF.
+  - Kernel state persists until 'stop' is executed or the system reboots.`)
 	os.Exit(2)
 }
 
@@ -43,9 +91,8 @@ func runCmd(commands []string) {
 	fs.BoolVar(&RunVars.DryRun, "dry-run", false, "Dry run")
 	fs.Parse(commands)
 
-	// check if we got all required commands
 	if RunVars.Iface == "" {
-		fmt.Printf("interface required to load XDP program\n")
+		fmt.Printf("error: interface is required\ntry: siper --help\n")
 		os.Exit(2)
 	}
 
@@ -90,7 +137,7 @@ func stopCmd(commands []string) {
 	fs.Parse(commands)
 
 	if RunVars.Iface == "" {
-		fmt.Printf("interface required to stop siper\n")
+		fmt.Printf("error: interface is required\ntry: siper --help\n")
 		os.Exit(2)
 	}
 
@@ -99,7 +146,7 @@ func stopCmd(commands []string) {
 	}
 }
 
-func dumpMetricsCmd(commands []string) {
+func dumpMetricsCmd() {
 	totalDrops, err := bpf.ReadMetrics(bpf.METRICS_DROP)
 	if err != nil {
 		panic(err)
@@ -119,7 +166,11 @@ func dumpMetricsCmd(commands []string) {
 	fmt.Printf("Bytes: %d\n", totalPass.Bytes)
 }
 
-func dumpKeysCmd(commands []string) {}
+func dumpKeysCmd(commands []string) {
+	fmt.Printf("under development\n")
+	// TODO
+	os.Exit(2)
+}
 
 func addKeysCmd(commands []string) {
 	var AddVars KeyOptions
@@ -133,7 +184,7 @@ func addKeysCmd(commands []string) {
 	fs.Parse(commands)
 
 	if AddVars.Cidr == "" {
-		fmt.Printf("CIDR is empty\n")
+		fmt.Printf("error: CIDR is required\ntry: siper --help\n")
 		os.Exit(2)
 	}
 
@@ -150,7 +201,11 @@ func addKeysCmd(commands []string) {
 	}
 }
 
-func delKeysCmd(commands []string) {}
+func delKeysCmd(commands []string) {
+	fmt.Printf("under development\n")
+	// TODO
+	os.Exit(2)
+}
 
 func main() {
 	if len(os.Args) < 2 {
@@ -170,8 +225,8 @@ func main() {
 	case "dump-keys":
 		dumpKeysCmd(os.Args[2:])
 	case "dump-metrics":
-		dumpMetricsCmd(os.Args[2:])
-	case "help":
+		dumpMetricsCmd()
+	case "help", "--help", "-h":
 		usage()
 		os.Exit(2)
 	default:
