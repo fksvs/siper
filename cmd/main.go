@@ -202,9 +202,35 @@ func addKeysCmd(commands []string) {
 }
 
 func delKeysCmd(commands []string) {
-	fmt.Printf("under development\n")
-	// TODO
-	os.Exit(2)
+	var DelVars KeyOptions
+
+	fs := flag.NewFlagSet("siper", flag.ExitOnError)
+	fs.SetOutput(os.Stdout)
+	fs.StringVar(&DelVars.BlacklistPath, "path", "./blacklist.json", "Path to Blacklist File [Required]")
+	fs.StringVar(&DelVars.Cidr, "cidr", "", "CIDR")
+	fs.StringVar(&DelVars.ID, "id", "", "id")
+	fs.Parse(commands)
+
+	if DelVars.Cidr == "" && DelVars.ID == "" {
+		fmt.Printf("error: CIDR or ID is required\ntry: siper --help\n")
+		os.Exit(2)
+	}
+
+	b, err := blacklist.LoadBlacklist(DelVars.BlacklistPath)
+	if err != nil {
+		b = blacklist.CreateBlacklist("1")
+	}
+
+	if DelVars.Cidr != "" {
+		b.DeleteByCidr(DelVars.Cidr)
+	} else if DelVars.ID != "" {
+		b.DeleteByID(DelVars.ID)
+	}
+
+	err = b.WriteBlacklist(DelVars.BlacklistPath)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func main() {

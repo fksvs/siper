@@ -1,4 +1,5 @@
 GO_BUILD := GOOS=$(GOOS) GOARCH=$(GOARCH) go build
+GO_BUILD_TARGET := siper
 
 CLANG := clang
 CFLAGS := -O2 -target bpf -g -c
@@ -15,7 +16,7 @@ FORMATTER := scripts/formatter.sh
 all: siper-go siper-bpf
 
 siper-go:
-	cd cmd && $(GO_BUILD) -o ../$(BUILD_DIR)/main .
+	cd cmd && $(GO_BUILD) -o ../$(BUILD_DIR)/$(GO_BUILD_TARGET) .
 
 siper-bpf: $(BPF_OBJECTS)
 
