@@ -40,10 +40,18 @@ func CreateKey(cidr string) (*IPv4LpmKey, error) {
 	return &key, nil
 }
 
+// we are going to use LoadPinnedMap, as document specified this function requires
+// at least Linux 4.5
 func (objs *SiperObjs) AddCidr(key *IPv4LpmKey) error {
 	var value uint32 = 1
 
-	err := objs.IPv4LpmMap.Update(key, value, ebpf.UpdateAny)
+	m, err := ebpf.LoadPinnedMap(IPv4LpmMapPinPath, nil)
+	if err != nil {
+		return err
+	}
+	defer m.Close()
+
+	err = m.Update(key, value, ebpf.UpdateAny)
 	if err != nil {
 		return err
 	}
@@ -52,7 +60,13 @@ func (objs *SiperObjs) AddCidr(key *IPv4LpmKey) error {
 }
 
 func (objs *SiperObjs) DelCidr(key *IPv4LpmKey) error {
-	err := objs.IPv4LpmMap.Delete(key)
+	m, err := ebpf.LoadPinnedMap(IPv4LpmMapPinPath, nil)
+	if err != nil {
+		return err
+	}
+	defer m.Close()
+
+	err = m.Delete(key)
 	if err != nil {
 		return err
 	}
@@ -60,10 +74,16 @@ func (objs *SiperObjs) DelCidr(key *IPv4LpmKey) error {
 	return nil
 }
 
-func (objs *SiperObjs) ReadMetrics(metricType uint32) (*DataRec, error) {
+func ReadMetrics(metricType uint32) (*DataRec, error) {
 	var records []DataRec
 
-	err := objs.MetricsMap.Lookup(metricType, &records)
+	m, err := ebpf.LoadPinnedMap(MetricsMapPinPath, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer m.Close()
+
+	err = m.Lookup(metricType, &records)
 	if err != nil {
 		return nil, err
 	}

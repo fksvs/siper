@@ -99,8 +99,27 @@ func stopCmd(commands []string) {
 	}
 }
 
-func dumpKeysCmd(commands []string)    {}
-func dumpMetricsCmd(commands []string) {}
+func dumpMetricsCmd(commands []string) {
+	totalDrops, err := bpf.ReadMetrics(bpf.METRICS_DROP)
+	if err != nil {
+		panic(err)
+	}
+
+	totalPass, err := bpf.ReadMetrics(bpf.METRICS_PASS)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("DROPS\n")
+	fmt.Printf("Packets: %d\n", totalDrops.Packets)
+	fmt.Printf("Bytes: %d\n", totalDrops.Bytes)
+
+	fmt.Printf("PASSES\n")
+	fmt.Printf("Packets: %d\n", totalPass.Packets)
+	fmt.Printf("Bytes: %d\n", totalPass.Bytes)
+}
+
+func dumpKeysCmd(commands []string) {}
 
 func addKeysCmd(commands []string) {
 	var AddVars KeyOptions
