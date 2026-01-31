@@ -166,7 +166,7 @@ func dumpMetricsCmd() {
 	fmt.Printf("Bytes: %d\n", totalPass.Bytes)
 }
 
-func dumpKeysCmd(commands []string) {
+func dumpKeysCmd() {
 	fmt.Printf("under development\n")
 	// TODO
 	os.Exit(2)
@@ -249,7 +249,7 @@ func main() {
 	case "del":
 		delKeysCmd(os.Args[2:])
 	case "dump-keys":
-		dumpKeysCmd(os.Args[2:])
+		dumpKeysCmd()
 	case "dump-metrics":
 		dumpMetricsCmd()
 	case "help", "--help", "-h":

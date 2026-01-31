@@ -1,6 +1,7 @@
 package bpf
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/cilium/ebpf"
@@ -39,8 +40,10 @@ func LoadProgram(objectName string, iface string) (*SiperObjs, error) {
 	}
 
 	fd := objs.XDPSiperFirewall.FD()
-	if err := netlink.LinkSetXdpFdWithFlags(l, fd, int(unix.XDP_FLAGS_SKB_MODE)); err != nil {
-		return nil, err
+	if err := netlink.LinkSetXdpFdWithFlags(l, fd, 0); err != nil {
+		if err2 := netlink.LinkSetXdpFdWithFlags(l, fd, int(unix.XDP_FLAGS_SKB_MODE)); err2 != nil {
+			return nil, fmt.Errorf("attach native: %v; attach skb fallback: %w", err, err2)
+		}
 	}
 
 	// link map and programs to persist

@@ -16,7 +16,6 @@ struct ipv4_lpm_key {
 	__u32 data;
 };
 
-// eBPF map as lookup table for IP addresses
 struct {
 	__uint(type, BPF_MAP_TYPE_LPM_TRIE);
 	__type(key, struct ipv4_lpm_key);
@@ -94,7 +93,7 @@ static __always_inline void metrics_inc(__u32 key, __u64 bytes)
 	}
 }
 
-static __always_inline __u32 *map_lookup(__u32 ipaddr)
+static __always_inline int *map_lookup(__u32 ipaddr)
 {
 	struct ipv4_lpm_key key = {
 		.prefixlen = 32,
@@ -133,8 +132,9 @@ int xdp_siper_firewall(struct xdp_md *ctx)
 		return XDP_PASS;
 	}
 
-	__u32 saddr = iph->saddr;
-	if (map_lookup(saddr)) {
+	__u32 saddr = bpf_ntohl(iph->saddr);
+	int *blocked = map_lookup(saddr);
+	if (blocked && *blocked) {
 		metrics_inc(METRICS_DROP, pkt_len);
 		return XDP_DROP;
 	}

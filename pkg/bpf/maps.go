@@ -83,7 +83,7 @@ func ReadMetrics(metricType uint32) (*DataRec, error) {
 	}
 	defer m.Close()
 
-	err = m.Lookup(metricType, &records)
+	err = m.Lookup(&metricType, &records)
 	if err != nil {
 		return nil, err
 	}
