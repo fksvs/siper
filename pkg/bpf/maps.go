@@ -74,8 +74,34 @@ func (objs *SiperObjs) DelCidr(key *IPv4LpmKey) error {
 	return nil
 }
 
-func ReadMetrics(metricType uint32) (*DataRec, error) {
-	var records []DataRec
+func ReadKeys() ([]IPv4LpmKey, error) {
+	var records []IPv4LpmKey
+
+	m, err := ebpf.LoadPinnedMap(IPv4LpmMapPinPath, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer m.Close()
+
+	var (
+		key     IPv4LpmKey
+		value   uint32
+		entries = m.Iterate()
+	)
+
+	for entries.Next(&key, &value) {
+		records = append(records, key)
+	}
+
+	if err := entries.Err(); err != nil {
+		return nil, err
+	}
+
+	return records, nil
+}
+
+func ReadMetrics(metricType uint32) (*MetricDataRec, error) {
+	var records []MetricDataRec
 
 	m, err := ebpf.LoadPinnedMap(MetricsMapPinPath, nil)
 	if err != nil {
@@ -88,7 +114,7 @@ func ReadMetrics(metricType uint32) (*DataRec, error) {
 		return nil, err
 	}
 
-	var total DataRec
+	var total MetricDataRec
 	for _, rec := range records {
 		total.Packets += rec.Packets
 		total.Bytes += rec.Bytes

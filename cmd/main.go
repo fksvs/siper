@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/binary"
 	"flag"
 	"fmt"
+	"net"
 	"os"
 
 	"github.com/fksvs/siper/pkg/blacklist"
@@ -146,6 +148,22 @@ func stopCmd(commands []string) {
 	}
 }
 
+func dumpKeysCmd() {
+	records, err := bpf.ReadKeys()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("IPv4 LPM Keys\n\n")
+
+	for i, v := range records {
+		ip := make(net.IP, 4)
+		binary.BigEndian.PutUint32(ip, v.Data)
+		fmt.Printf("Record %d\nPrefix: %d\nData: %s\n\n",
+			i, v.PrefixLen, ip.String())
+	}
+}
+
 func dumpMetricsCmd() {
 	totalDrops, err := bpf.ReadMetrics(bpf.METRICS_DROP)
 	if err != nil {
@@ -164,12 +182,6 @@ func dumpMetricsCmd() {
 	fmt.Printf("PASSES\n")
 	fmt.Printf("Packets: %d\n", totalPass.Packets)
 	fmt.Printf("Bytes: %d\n", totalPass.Bytes)
-}
-
-func dumpKeysCmd() {
-	fmt.Printf("under development\n")
-	// TODO
-	os.Exit(2)
 }
 
 func addKeysCmd(commands []string) {

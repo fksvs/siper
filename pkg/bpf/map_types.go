@@ -21,7 +21,7 @@ type IPv4LpmKey struct {
 	Data      uint32
 }
 
-type DataRec struct {
+type MetricDataRec struct {
 	Packets uint64
 	Bytes   uint64
 }
