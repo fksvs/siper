@@ -1,8 +1,18 @@
+GOOS ?= $(shell go env GOOS)
+GOARCH ?= $(shell go env GOARCH)
 GO_BUILD := GOOS=$(GOOS) GOARCH=$(GOARCH) go build
 GO_BUILD_TARGET := siper
 
 CLANG := clang
 CFLAGS := -O2 -target bpf -g -c
+
+MULTIARCH ?= $(shell gcc -print-multiarch 2>/dev/null)
+ifeq ($(strip $(MULTIARCH)),)
+	MULTIARCH := $(shell gcc -dumpmachine 2>/dev/null)
+endif
+ifneq ($(wildcard /usr/include/$(MULTIARCH)),)
+	CFLAGS += -I/usr/include/$(MULTIARCH)
+endif
 
 BUILD_DIR := build
 
@@ -16,7 +26,7 @@ FORMATTER := scripts/formatter.sh
 all: siper-go siper-bpf
 
 siper-go:
-	cd cmd && $(GO_BUILD) -o ../$(BUILD_DIR)/$(GO_BUILD_TARGET) .
+	$(GO_BUILD) -o ./$(BUILD_DIR)/$(GO_BUILD_TARGET) ./cmd
 
 siper-bpf: $(BPF_OBJECTS)
 

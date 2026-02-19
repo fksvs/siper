@@ -1,5 +1,4 @@
 #include <stddef.h>
-#include <netinet/in.h>
 #include <linux/in.h>
 #include <linux/if_ether.h>
 #include <linux/if_packet.h>
