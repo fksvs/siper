@@ -15,6 +15,10 @@ FORMATTER := scripts/formatter.sh
 
 all: siper-go siper-bpf
 
+generate-vmlinux:
+	@test -f /sys/kernel/btf/vmlinux || (echo "BTF not found"; exit 1)
+	bpftool btf dump file /sys/kernel/btf/vmlinux format c > bpf/include/vmlinux.h
+
 siper-go:
 	cd cmd && $(GO_BUILD) -o ../$(BUILD_DIR)/$(GO_BUILD_TARGET) .
 

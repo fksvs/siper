@@ -1,14 +1,10 @@
-#include <stddef.h>
-#include <netinet/in.h>
-#include <linux/in.h>
-#include <linux/if_ether.h>
-#include <linux/if_packet.h>
-#include <linux/ip.h>
-#include <linux/bpf.h>
+#include "include/vmlinux.h"
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_endian.h>
 
 char _license[] SEC("license") = "GPL";
+
+#define ETH_P_IP 0x0800
 
 // structure to hold IP address and prefix in CIDR form
 struct ipv4_lpm_key {
