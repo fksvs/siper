@@ -1,3 +1,5 @@
+
+
 # Siper (Shield)
 
 Siper is a high-performance, XDP-based IP blacklist firewall built with Go and C (eBPF). It allows you to drop malicious traffic at the earliest possible stage in the Linux networking stack—the network driver level. By leveraging XDP (Express Data Path), Siper processes packets before they even reach the kernel's heavy networking subsystem, providing extreme performance even under heavy DDoS conditions.
@@ -27,7 +29,7 @@ Siper operates on the principle of separating the Control Plane (User-space) fro
 ### The Packet Flow (Kernel-space)
 
 1. **Ingress**: A packet arrives at the network interface.
-2. **Lookup**: The XDP program intercepts the packet and performs a lookup in the block_list map.
+2. **Lookup**: The XDP program intercepts the packet and performs a lookup in the ipv4_lpm_map map.
 3. **Verdict**:
 
     - **Match**: The packet is dropped immediately (XDP_DROP).
